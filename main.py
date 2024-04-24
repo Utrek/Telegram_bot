@@ -139,6 +139,7 @@ def create_cards(message):
     name = message.from_user.username
     count = session.query(func.count(Words.english_word)).scalar()
     session.query(Users).filter( Users.user_name == name).update({Users.count_words: count})
+    session.commit()
     id = get_id(name)
     
     target_words = get_target_words_dict(id)
