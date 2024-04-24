@@ -99,7 +99,7 @@ def get_user_step(uid):
 def hello(message):
     user = session.query(Users.user_name).filter(Users.user_name == 'All').all()
     if not user:
-        session.add(Users(user_name = 'All',count_words = 17))
+        session.add(Users(user_name = 'All'))
         session.commit()
     cid = message.chat.id
     if cid not in known_users:
@@ -110,7 +110,7 @@ def hello(message):
     if user_table_name:
         bot.send_message(cid, f'Привет, {name}! \nЯ бот для изучения английского языка.\n Чтобы начать нажми кнопку: \nНачать изучение 📚 \n У тебя есть возможность использовать тренажёр, как конструктор, и собирать свою собственную базу для обучения.\n Для этого воспрользуйся инструментами:\n Добавить слово ➕, \n Удалить слово ➖. \n Тренировки можешь проходить в удобном для себя темпе.')
     else:
-       session.add(Users(user_name=name, count_words = 17))
+       session.add(Users(user_name=name))
        session.commit()
        bot.send_message(cid, f'Привет, {name}! \nЯ бот для изучения английского языка.\n Чтобы начать нажми кнопку: \nНачать изучение 📚 \n У тебя есть возможность использовать тренажёр, как конструктор, и собирать свою собственную базу для обучения.\n Для этого воспрользуйся инструментами:\n Добавить слово ➕, \n Удалить слово ➖. \n Тренировки можешь проходить в удобном для себя темпе.')
     start(message)
@@ -137,6 +137,8 @@ def exit(message):
 def create_cards(message):
     markup = types.ReplyKeyboardMarkup(row_width=2)
     name = message.from_user.username
+    count = session.query(func.count(Words.english_word)).scalar()
+    session.query(Users).filter( Users.user_name == name).update({Users.count_words: count})
     id = get_id(name)
     
     target_words = get_target_words_dict(id)
@@ -207,7 +209,7 @@ def del_base(message):
     id = get_id(name)
     session.add(Deleted_words(english_word= del_eng_word.lower(), russian_word=del_rus_word.lower(),user_id=id))
     session.commit()
-    session.query(Users).filter( Users.user_name == 'UtrekTi').update({Users.count_words: Users.count_words-1})
+    session.query(Users).filter( Users.user_name == name).update({Users.count_words: Users.count_words-1})
     session.commit()
     bot.send_message(message.chat.id, f'Готово – {del_eng_word} удалено!')
     
@@ -231,24 +233,24 @@ def add_russian_word(message):
                 delete = session.query(Deleted_words).filter(Deleted_words.english_word == eng_word.lower(),Deleted_words.user_id == id).one()
                 session.delete(delete)
                 session.commit()
-                session.query(Users).filter( Users.user_name == 'UtrekTi').update({Users.count_words: Users.count_words+1})
+                session.query(Users).filter( Users.user_name == name).update({Users.count_words: Users.count_words+1})
                 session.commit()
-                count = session.query(Users.count_words).filter( Users.user_name == 'UtrekTi').one()
+                count = session.query(Users.count_words).filter( Users.user_name == name).one()
                 bot.send_message(message.from_user.id, f'Готово – {eng_word} добавлено!\nСлов для изучения- {count[0]}')
             else:
-                count = session.query(Users.count_words).filter( Users.user_name == 'UtrekTi').one()
+                count = session.query(Users.count_words).filter( Users.user_name == name).one()
                 bot.send_message(message.from_user.id, f'Ты уже учишь это! \nСлов для изучения- {count[0]}')
         elif user_words:
             if del_word:
                 delete = session.query(Deleted_words).filter(Deleted_words.english_word == eng_word.lower(),Deleted_words.user_id == id).one()
                 session.delete(delete)
                 session.commit()
-                session.query(Users).filter( Users.user_name == 'UtrekTi').update({Users.count_words: Users.count_words+1})
+                session.query(Users).filter( Users.user_name == name).update({Users.count_words: Users.count_words+1})
                 session.commit()
-                count = session.query(Users.count_words).filter( Users.user_name == 'UtrekTi').one()
+                count = session.query(Users.count_words).filter( Users.user_name == name).one()
                 bot.send_message(message.from_user.id, f'Готово – {eng_word} добавлено!\nСлов для изучения- {count[0]}')
             else:
-                count = session.query(Users.count_words).filter( Users.user_name == 'UtrekTi').one()
+                count = session.query(Users.count_words).filter( Users.user_name == name).one()
                 bot.send_message(message.from_user.id, f'Ты уже учишь это! \nСлов для изучения- {count[0]}')        
         else:
             bot.send_message(message.from_user.id, "А теперь на русском!")
@@ -264,9 +266,9 @@ def add_base(message):
     id = get_id(name)    
     session.add(Words(english_word= eng_word.lower(), russian_word=rus_word.lower(),user_id=id))
     session.commit()
-    session.query(Users).filter( Users.user_name == 'UtrekTi').update({Users.count_words: Users.count_words+1})
+    session.query(Users).filter( Users.user_name == name).update({Users.count_words: Users.count_words+1})
     session.commit()
-    count = session.query(Users.count_words).filter( Users.user_name == 'UtrekTi').one()
+    count = session.query(Users.count_words).filter( Users.user_name == name).one()
 
     bot.send_message(message.chat.id, f'✅ Готово!\nТеперь слов для изучения - {count[0]}')
 
